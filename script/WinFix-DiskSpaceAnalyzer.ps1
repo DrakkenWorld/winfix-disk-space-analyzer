@@ -23,7 +23,7 @@ if ([string]::IsNullOrWhiteSpace($Path)) {
     throw "Invalid scan path: the path cannot be empty."
 }
 
-if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+if (-not (Test-Path -LiteralPath $Path -PathType Container -ErrorAction SilentlyContinue)) {
     throw "Invalid scan path: directory does not exist or is inaccessible: '$Path'"
 }
 
