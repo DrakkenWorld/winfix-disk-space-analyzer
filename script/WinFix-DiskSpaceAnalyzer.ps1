@@ -215,3 +215,14 @@ Write-Host "HTML report : $htmlPath"
 Write-Host "Largest files CSV : $filesCsvPath"
 Write-Host "Folders CSV : $foldersCsvPath"
 Write-Host "Files counted: $($files.Count) | Errors: $($errors.Count) | Total: $(Format-Bytes -Bytes $totalBytes)"
+
+# Explicit process exit codes for command-line automation:
+# 0 = scan completed without recorded scan errors
+# 1 = fatal error (PowerShell's terminating-error behavior under -File)
+# 2 = reports generated, but one or more scan errors were recorded
+if ($errors.Count -gt 0) {
+    Write-Host "Scan completed with $($errors.Count) error(s)." -ForegroundColor Yellow
+    exit 2
+}
+
+exit 0
