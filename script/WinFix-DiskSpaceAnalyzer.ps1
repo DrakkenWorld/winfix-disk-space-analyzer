@@ -1,7 +1,6 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [Parameter()]
-    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
     [string]$Path = $env:USERPROFILE,
 
     [Parameter()]
