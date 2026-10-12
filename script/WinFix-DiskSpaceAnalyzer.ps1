@@ -18,6 +18,15 @@ param(
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 
+# Validate the scan path explicitly
+if ([string]::IsNullOrWhiteSpace($Path)) {
+    throw "Invalid scan path: the path cannot be empty."
+}
+
+if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+    throw "Invalid scan path: directory does not exist or is inaccessible: '$Path'"
+}
+
 function Format-Bytes {
     param([long]$Bytes)
     if ($Bytes -ge 1TB) { return ("{0:N2} TB" -f ($Bytes / 1TB)) }
