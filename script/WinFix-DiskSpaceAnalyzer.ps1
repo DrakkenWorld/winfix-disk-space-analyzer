@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter()]
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
@@ -31,8 +31,8 @@ function Format-Bytes {
 function Get-DirectoryUsage {
     param(
         [Parameter(Mandatory)][string]$Directory,
-        [Parameter(Mandatory)][System.Collections.Generic.List[object]]$FileCollector,
-        [Parameter(Mandatory)][System.Collections.Generic.List[string]]$ErrorCollector
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$FileCollector,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[string]]$ErrorCollector
     )
 
     [long]$total = 0
