@@ -1,10 +1,20 @@
-# WinFix Kit — Analyseur d’espace disque 1.1.0
+# WinFix Kit — Analyseur d’espace disque 1.2.0
 
 [English](README.md) · Français
 
-Repérez les fichiers et dossiers volumineux et générez des rapports HTML et CSV sur votre ordinateur. L’outil analyse les fichiers en lecture seule : il ne les supprime, ne les déplace et ne les téléverse pas.
+Repérez les fichiers et dossiers volumineux avec une application Windows ou un script PowerShell. L’analyse est en lecture seule : aucun fichier analysé n’est supprimé, déplacé ni téléversé.
 
-## Télécharger et utiliser
+## Application Windows — recommandée
+
+Téléchargez [WinFix-DiskSpaceAnalyzer-Windows-x64.exe](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/releases/latest/download/WinFix-DiskSpaceAnalyzer-Windows-x64.exe), ouvrez-le par double-clic, choisissez un dossier et cliquez sur **Analyser**. Aucune installation, commande, installation de PowerShell ou de .NET n’est nécessaire. Le fichier inclut .NET et pèse environ 111 Mio. Cette version est destinée à **Windows 10/11 x64** ; aucune version ARM64 ou 32 bits n’est fournie.
+
+L’interface propose le français et l’anglais, un compteur d’avancement, l’annulation et des onglets pour les fichiers volumineux, les sous-dossiers et les erreurs d’accès. **Ouvrir le rapport HTML** enregistre les rapports puis ouvre le rapport dans votre navigateur. **Exporter HTML + CSV** enregistre les mêmes fichiers puis ouvre leur dossier. Les rapports sont créés uniquement après une analyse terminée et une action explicite d’ouverture ou d’export ; une annulation n’en crée aucun. Les accès refusés sont signalés et rendent les totaux incomplets. Les options avancées permettent de choisir la destination des rapports et le nombre de résultats.
+
+L’application fonctionne sans élévation, sans installateur, mise à jour automatique, préférences enregistrées ni envoi réseau. .NET peut extraire ses composants natifs dans son cache temporaire utilisateur. Ce premier exécutable est **non signé** : Windows peut afficher un avertissement d’éditeur inconnu ou de réputation. Les empreintes de la release vérifient l’intégrité, sans remplacer une signature. Les licences sont consultables dans **À propos**, ainsi que dans le ZIP et la release.
+
+Consultez le [guide de l’application](docs/DESKTOP.md). Le moteur C# conserve les métadonnées des fichiers les plus volumineux demandés, la liste des dossiers à parcourir et les erreurs. Le script PowerShell reste disponible séparément pour l’automatisation.
+
+## PowerShell — utilisateurs avancés
 
 Téléchargez le script ou le ZIP depuis les [versions stables](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/releases/latest). Le ZIP contient les guides français et anglais. Le script est autonome : aucun module supplémentaire à installer.
 

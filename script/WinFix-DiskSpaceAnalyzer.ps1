@@ -1,5 +1,5 @@
 ﻿#requires -Version 5.1
-# WinFix Kit Disk Space Analyzer 1.1.0
+# WinFix Kit Disk Space Analyzer 1.2.0
 [CmdletBinding()]
 param(
     [Parameter()]

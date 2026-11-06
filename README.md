@@ -1,12 +1,22 @@
-# WinFix Kit — Disk Space Analyzer 1.1.0
+# WinFix Kit — Disk Space Analyzer 1.2.0
 
 English · [Français](README.fr.md)
 
 [![Windows tests](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/actions/workflows/ci.yml)
 
-Read-only PowerShell disk usage analysis. Find the largest files and direct subfolders, and generate local HTML and CSV reports. No telemetry, upload, cleanup or deletion of scanned files.
+Read-only disk usage analysis for Windows. Use the portable desktop application or the PowerShell script to find large files and folders. Reports stay local; no telemetry, upload, cleanup or deletion of scanned files.
 
-## Download and run
+## Windows application — recommended
+
+Download [WinFix-DiskSpaceAnalyzer-Windows-x64.exe](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/releases/latest/download/WinFix-DiskSpaceAnalyzer-Windows-x64.exe), open it, choose a folder and click **Analyze**. No installation, terminal, PowerShell or .NET installation is needed. The portable file includes .NET and is approximately 111 MiB. Requires Windows 10/11 **x64**; ARM64 and 32-bit builds are not provided in this release.
+
+The interface offers English/French, a live file count and size, cancellation, largest-file and direct-subfolder tables, access errors and HTML/CSV export. **Open HTML report** saves a report and opens it in your default browser. **Export HTML + CSV** saves the same files and opens their folder. Reports are generated only after a completed scan and an explicit report/export action. Cancelling generates no report. Access errors are shown with incomplete totals. Advanced options let you choose the report destination and result limits.
+
+The app runs without elevation, has no installer or auto-updater, and does not save preferences or contact a network service. .NET may extract bundled native libraries to its per-user temporary cache. This first desktop executable is **unsigned**; Windows may show an unknown-publisher or reputation warning. Its checksum is attached to the release, not a substitute for code signing. App and bundled-runtime license notices are available under **About** and in the ZIP/release.
+
+See the [desktop guide and build instructions](docs/DESKTOP.md). The C# engine keeps only the requested largest-file metadata, directory worklist and errors, rather than all file rows. The PowerShell implementation remains independent and available for automation.
+
+## PowerShell — advanced users
 
 Download the script or ZIP from [Releases](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/releases/latest). Requires Windows PowerShell 5.1 or PowerShell 7 on Windows. Administrator rights are unnecessary for ordinary user folders. Inspect the source before running and follow your organization's execution policy. If Windows blocks a trusted downloaded script, use `Unblock-File` on that file after reviewing it.
 

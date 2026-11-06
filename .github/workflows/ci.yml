@@ -23,14 +23,42 @@ jobs:
         if: matrix.shell == 'pwsh'
         shell: pwsh
         run: ./tests/Run-Tests.ps1
+  desktop:
+    runs-on: windows-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      NUGET_PACKAGES: ${{ github.workspace }}/.build/nuget
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore native test projects
+        run: dotnet restore desktop/WinFix.Tests/WinFix.Tests.csproj --configfile desktop/NuGet.Config
+      - name: Native engine and export integration tests
+        run: dotnet run --project desktop/WinFix.Tests/WinFix.Tests.csproj -c Release --no-restore
+      - name: Build standalone Windows x64 application
+        shell: pwsh
+        run: ./desktop/Build-Portable.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: winfix-desktop-win-x64
+          path: |
+            artifacts/win-x64/WinFix-DiskSpaceAnalyzer.exe
+            artifacts/win-x64/DOTNET-NOTICES.txt
+          if-no-files-found: error
   release:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: test
+    needs: [test, desktop]
     runs-on: windows-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: winfix-desktop-win-x64
+          path: desktop-download
       - name: Publish version once, after both Windows test jobs pass
         shell: pwsh
         env:
@@ -42,13 +70,28 @@ jobs:
           $version = (Get-Content VERSION -Raw).Trim()
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid stable version' }
           $tag = "v$version"
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) { Write-Host "$tag already published"; exit 0 }
+          $existingDraft = gh release view $tag --json isDraft --jq .isDraft 2>$null
+          $exists = $LASTEXITCODE -eq 0
+          if ($exists -and $existingDraft -eq 'false') { Write-Host "$tag already published"; exit 0 }
           New-Item -ItemType Directory -Path package | Out-Null
           Copy-Item script/WinFix-DiskSpaceAnalyzer.ps1,LICENSE,README.md,README.fr.md,CHANGELOG.md -Destination package
+          Copy-Item docs -Destination package -Recurse
           Compress-Archive -Path package/* -DestinationPath "WinFix-DiskSpaceAnalyzer-$tag.zip"
-          $assets = @('script/WinFix-DiskSpaceAnalyzer.ps1', "WinFix-DiskSpaceAnalyzer-$tag.zip")
+          New-Item -ItemType Directory -Path desktop-package | Out-Null
+          Copy-Item desktop-download/WinFix-DiskSpaceAnalyzer.exe -Destination WinFix-DiskSpaceAnalyzer-Windows-x64.exe
+          Copy-Item WinFix-DiskSpaceAnalyzer-Windows-x64.exe,desktop-download/DOTNET-NOTICES.txt,LICENSE,README.md,README.fr.md -Destination desktop-package
+          Copy-Item docs -Destination desktop-package -Recurse
+          Compress-Archive -Path desktop-package/* -DestinationPath "WinFix-DiskSpaceAnalyzer-Windows-x64-$tag.zip"
+          $assets = @('WinFix-DiskSpaceAnalyzer-Windows-x64.exe', "WinFix-DiskSpaceAnalyzer-Windows-x64-$tag.zip", 'desktop-download/DOTNET-NOTICES.txt', 'script/WinFix-DiskSpaceAnalyzer.ps1', "WinFix-DiskSpaceAnalyzer-$tag.zip")
           $hashes = foreach ($asset in $assets) { '{0}  {1}' -f (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant(), (Split-Path $asset -Leaf) }
           [IO.File]::WriteAllLines((Join-Path $PWD 'SHA256SUMS.txt'), $hashes, [Text.Encoding]::ASCII)
-          gh release create $tag @assets SHA256SUMS.txt --target $env:COMMIT_SHA --title "WinFix Disk Space Analyzer $tag" --notes-file docs/RELEASE-NOTES.md --latest
+          if (-not $exists) {
+            gh release create $tag --draft --target $env:COMMIT_SHA --title "WinFix Disk Space Analyzer $tag" --notes-file docs/RELEASE-NOTES.md
+            if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed' }
+          }
+          gh release upload $tag @assets SHA256SUMS.txt --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed; draft left unpublished' }
+          $count = gh release view $tag --json assets --jq '.assets | length'
+          if ($LASTEXITCODE -ne 0 -or [int]$count -ne ($assets.Count + 1)) { throw 'Release asset verification failed' }
+          gh release edit $tag --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed' }

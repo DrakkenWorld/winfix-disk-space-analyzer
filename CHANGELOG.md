@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 — 2026-11-06
+
+- Added a native portable Windows x64 application with folder picker, English/French UI, asynchronous scanning, progress, cancellation, results and explicit HTML/CSV exports.
+- Added a bounded largest-file collector, nine native integration tests, runtime license embedding and automated desktop build/release assets.
+- Retained the standalone PowerShell interface and CSV schemas for automation.
+- Desktop executable is unsigned; ARM64/x86 and clean Windows 11 manual testing are not included in this release.
+
 ## 1.1.0 — 2026-11-06
 
 - Added `-Language fr` for French console messages, application errors, HTML reports and size formatting; English remains the default.

@@ -2,3 +2,7 @@ WinFixReport/
 package/
 *.zip
 SHA256SUMS.txt
+.build/
+**/bin/
+**/obj/
+artifacts/
