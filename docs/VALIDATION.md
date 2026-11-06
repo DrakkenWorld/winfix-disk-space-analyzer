@@ -1,5 +1,13 @@
 # Validation evidence
 
+## Delivery verification — 2026-11-07
+
+GitHub main matches local commit c6dddf22effd52ff5f4fb7f880fb90ffdc32832f. Release v1.2.0 is published with six assets. The [release workflow](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/actions/runs/42276881583) completed successfully. No open pull requests or issues were present during this inspection.
+
+All eleven PowerShell cases passed again locally under Windows PowerShell 5.1.19041.7802 and PowerShell 7.6.9; all nine native cases passed again on Windows 10 build 19045. The already-downloaded verified-release EXE SHA-256 is a344644ae8e46d6590b7cc33bb2b128c5931962871de1e0e2c80a367e2688e4f, matching GitHub's release asset digest. This verifies that local EXE against GitHub metadata, not every downloaded asset.
+
+The site was synchronized to 28c9d51f1d6e6ccc69ced5444afdfba556c8ddb9 while preserving the Google Search Console additions. Its local site checks pass; the [Pages workflow](https://github.com/DrakkenWorld/winfix-kit-site/actions/runs/42286763942) completed successfully. No new Analyzer release is required for this documentation update. The existing manual GUI, clean Windows 11 and code-signing limitations below remain open.
+
 ## Executed locally on 2026-11-06
 
 Windows 10 build 19045. Nine cases passed, exit code 0, independently under:
