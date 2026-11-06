@@ -45,7 +45,7 @@ jobs:
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) { Write-Host "$tag already published"; exit 0 }
           New-Item -ItemType Directory -Path package | Out-Null
-          Copy-Item script/WinFix-DiskSpaceAnalyzer.ps1,LICENSE,README.md,CHANGELOG.md -Destination package
+          Copy-Item script/WinFix-DiskSpaceAnalyzer.ps1,LICENSE,README.md,README.fr.md,CHANGELOG.md -Destination package
           Compress-Archive -Path package/* -DestinationPath "WinFix-DiskSpaceAnalyzer-$tag.zip"
           $assets = @('script/WinFix-DiskSpaceAnalyzer.ps1', "WinFix-DiskSpaceAnalyzer-$tag.zip")
           $hashes = foreach ($asset in $assets) { '{0}  {1}' -f (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant(), (Split-Path $asset -Leaf) }

@@ -1,11 +1,19 @@
-First stable release: read-only Windows disk usage analysis with local HTML and CSV reports.
+# WinFix Disk Space Analyzer 1.1.0 / Analyseur d'espace disque
 
-- Both collectors explicitly accept empty collections (`AllowEmptyCollection`).
-- Report directories inside the scan are excluded, report filenames are unique, and reparse points are skipped (including rejection of a reparse-point root).
-- CSV exports have stable headers, UTF-8 BOM, ISO 8601 timestamps and protection against spreadsheet formulas in text cells. HTML content is escaped.
-- Nine integration scenarios cover exact totals, sorting and limits, empty and missing paths, source preservation, Unicode, nested reports, junctions, denied access and 5,000 files / 2,750,000 bytes.
-- The release workflow requires passing Windows PowerShell 5.1 and PowerShell 7 jobs before publishing the script, ZIP and SHA-256 checksums.
+French is now available in the same standalone script:
 
-Reports measure logical file length, not reclaimable or allocated disk space. Memory usage grows with file count. Access errors make totals incomplete. Reports contain local names and paths; review before sharing.
+```powershell
+.\WinFix-DiskSpaceAnalyzer.ps1 -Path "$env:USERPROFILE\Documents" -Language fr
+```
 
-Local validation on 2026-11-06: all nine scenarios passed on Windows 10 build 19045 under PowerShell 5.1.19041.7802 and 7.6.9. A clean Windows 11 installation has not been manually tested. The earlier user-reported 1.69-second benchmark is historical, not a timing guarantee.
+- French console messages, application errors, HTML report, dates and size display.
+- English remains available with `-Language en` and remains the default.
+- Exact bytes, CSV headers, filenames and exit codes remain compatible across languages.
+- The ZIP includes README.fr.md and README.md. UTF-8 BOM preserves French accents in Windows PowerShell 5.1.
+- Eleven Windows integration scenarios include French reports and errors, alongside the existing read-only, access-denied, junction and 5,000-file tests.
+
+Le français est disponible avec `-Language fr`. Le script, les rapports et les tailles lisibles sont traduits ; les colonnes CSV restent identiques pour la compatibilité. Consultez README.fr.md dans le ZIP pour le guide complet.
+
+Reports measure logical file lengths, not reclaimable disk space. Access errors make totals incomplete. Reports contain names and paths; review before sharing. Native Windows error details retain the OS language.
+
+Local validation on 2026-11-06: all eleven scenarios passed on Windows 10 build 19045 with Windows PowerShell 5.1.19041.7802 and PowerShell 7.6.9. The release workflow requires passing both Windows CI jobs before publication. No clean Windows 11 manual test is claimed.

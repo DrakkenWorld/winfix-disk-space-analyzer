@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 — 2026-11-06
+
+- Added `-Language fr` for French console messages, application errors, HTML reports and size formatting; English remains the default.
+- Kept CSV schemas, filenames, exact byte totals and exit codes compatible across languages.
+- Added a French usage guide, included in the release ZIP, and two integration scenarios covering localization.
+- Preserved UTF-8 BOM in PowerShell source so accents render correctly under Windows PowerShell 5.1.
+
 ## 1.0.0 — 2026-11-06
 
 - Stable read-only analyzer with local HTML and CSV reports.

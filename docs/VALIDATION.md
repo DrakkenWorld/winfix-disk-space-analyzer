@@ -16,3 +16,9 @@ No timing threshold is asserted. GitHub-hosted test results must be read from Ac
 2026-10-12: missing path rejected; denied-access scan continued with 1 accessible file / 12 bytes / 1 error; scale scan found 5,000 files / 2,750,000 bytes / 0 errors in 1.69 seconds (HTML rounded to 1.6 seconds).
 
 The original historical CSV files were not supplied here. Their contents have not been inspected. Current automated tests inspect newly generated CSV files instead.
+
+## Version 1.1.0 localization validation — 2026-11-06
+
+All eleven scenarios passed locally on Windows 10 build 19045 under Windows PowerShell 5.1.19041.7802 and PowerShell 7.6.9. Two added scenarios verify French HTML headings, notices, console, number formatting, stable numeric CSV data and schema, empty results, translated application validation errors and rejection of unsupported languages. Original nine scenarios also passed.
+
+PowerShell source and tests use UTF-8 BOM for Windows PowerShell 5.1 compatibility. Windows-provided exception details are not translated by the application. Publication requires passing the new CI run; local results are not a claim that an unobserved CI run succeeded.

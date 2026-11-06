@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 [CmdletBinding()]
 param()
 Set-StrictMode -Version 2.0
@@ -28,7 +28,7 @@ function Scan([string]$Source, [string]$Output, [int]$Expected = 0, [string[]]$E
     $html = @(Get-ChildItem -LiteralPath $Output -Filter '*.html' | Sort-Object LastWriteTime -Descending)[0]
     $files = @(Get-ChildItem -LiteralPath $Output -Filter 'LargestFiles_*.csv' | Sort-Object LastWriteTime -Descending)[0]
     $folders = @(Get-ChildItem -LiteralPath $Output -Filter 'TopLevelFolders_*.csv' | Sort-Object LastWriteTime -Descending)[0]
-    [pscustomobject]@{ Html = [IO.File]::ReadAllText($html.FullName); Files = @(Import-Csv -LiteralPath $files.FullName); Folders = @(Import-Csv -LiteralPath $folders.FullName); CsvPath = $files.FullName }
+    [pscustomobject]@{ Html = [IO.File]::ReadAllText($html.FullName); Files = @(Import-Csv -LiteralPath $files.FullName); Folders = @(Import-Csv -LiteralPath $folders.FullName); CsvPath = $files.FullName; Log = ($log -join "`n") }
 }
 function Directory([string]$Name) {
     $p = Join-Path $root $Name
@@ -131,6 +131,33 @@ try {
         Assert (($r.Folders | Measure-Object LengthBytes -Sum).Sum -eq 2750000) 'Exact byte sum'
         Assert (($r.Folders | Measure-Object FilesFound -Sum).Sum -eq 5000) 'Exact file count'
         Assert ($r.Html -match 'Access / scan errors</span><span class="value">0<') 'No errors'
+    }
+    Case 'French report, console, number formatting and stable CSV schema' {
+        $d = Directory 'french'; $sub = Directory 'french/sub'
+        File (Join-Path $sub 'example.bin') 2048
+        $r = Scan $d (Join-Path $root 'french-out') 0 @('-Language','fr')
+        Assert ($r.Html.Contains('<html lang="fr">')) 'French HTML language'
+        Assert ($r.Html.Contains('Dossier analysé') -and $r.Html.Contains('Fichiers trouvés')) 'Translated summary'
+        Assert ($r.Html.Contains('Sous-dossiers directs les plus volumineux')) 'Translated folders'
+        Assert ($r.Html.Contains('ne supprime') -and $r.Html.Contains('taille logique des fichiers')) 'Translated notices'
+        Assert ($r.Log.Contains('Analyse terminée.') -and $r.Log.Contains('Fichiers comptabilisés: 1')) 'French console'
+        Assert ($r.Files[0].LengthBytes -eq '2048' -and $r.Files[0].Size -eq '2,00 Ko') 'French size; numeric bytes unchanged'
+        Assert (($r.Files[0].PSObject.Properties.Name -join ',') -eq 'Name,FullName,LengthBytes,Size,LastWriteTime') 'Stable CSV columns'
+        Assert (-not $r.Html.Contains('Get-Text') -and -not $r.Html.Contains('Folder totals may')) 'No translation tokens or English notice leaked'
+    }
+    Case 'French empty results, translated fatal error and invalid language' {
+        $d = Directory 'french-empty'
+        $r = Scan $d (Join-Path $root 'french-empty-out') 0 @('-Language','fr')
+        Assert ($r.Html.Contains('Aucun fichier trouvé.') -and $r.Html.Contains('Aucun sous-dossier trouvé.')) 'French empty messages'
+        Assert ($r.Html.Contains('Aucune erreur')) 'French error-free message'
+        $previousPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $log = & $engine -NoProfile -ExecutionPolicy Bypass -File $scriptPath -Path (Join-Path $root 'missing-fr') -Language fr 2>&1
+            $code = $LASTEXITCODE
+        } finally { $ErrorActionPreference = $previousPreference }
+        Assert ($code -eq 1 -and ($log -join "`n") -match 'Chemin invalide') 'French validation error'
+        Scan $d (Join-Path $root 'invalid-language-out') 1 @('-Language','de')
     }
     Write-Host "All $script:passed cases passed on PowerShell $($PSVersionTable.PSVersion), $([Environment]::OSVersion.VersionString)."
 } finally {

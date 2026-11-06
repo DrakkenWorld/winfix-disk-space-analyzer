@@ -1,4 +1,6 @@
-# WinFix Kit — Disk Space Analyzer 1.0.0
+# WinFix Kit — Disk Space Analyzer 1.1.0
+
+English · [Français](README.fr.md)
 
 [![Windows tests](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/actions/workflows/ci.yml)
 
@@ -21,6 +23,9 @@ Reports are written into the output directory. Choose a dedicated subfolder or a
 | `OutputDirectory` | `WinFixReport` under current directory | Writable directory distinct from scan root |
 | `TopFiles` | 25 | 1–500 |
 | `TopFolders` | 20 | 1–200 |
+| `Language` | `en` | `en` or `fr`: console and HTML report language |
+
+For a French report and console, add `-Language fr`. English remains the default for compatibility. Byte counts, CSV headers, filenames and exit codes are identical in both languages; the CSV `Size` display uses English or French formatting (for example `2.00 KB` / `2,00 Ko`). Windows-generated exception details retain the operating system's language.
 
 Use a separate PowerShell process for automation: the script exits with **0** on a complete scan, **1** on a fatal error, or **2** when reports were generated with scan errors. A fatal export error can leave partial output; it never reports a successful scan.
 
@@ -54,7 +59,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-Tests.ps1
 pwsh.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-Tests.ps1
 ```
 
-The nine integration scenarios create a unique temporary fixture, start the analyzer as a child process, inspect reports and verify source hashes. The denied-access test changes only its own fixture ACL and restores it; the junction test removes its own junction before cleanup. No administrator privileges are required.
+The eleven integration scenarios create a unique temporary fixture, start the analyzer as a child process, inspect reports and verify source hashes. They include French HTML, console, units, empty results and validation errors. The denied-access test changes only its own fixture ACL and restores it; the junction test removes its own junction before cleanup. No administrator privileges are required.
 
 See [validation evidence](docs/VALIDATION.md). GitHub Actions runs both PowerShell editions on `windows-latest`. After both jobs pass on `main`, it publishes the version in `VERSION` if that release does not already exist, with script, ZIP and `SHA256SUMS.txt`. Published versions are not overwritten. Bump `VERSION`, script version, changelog and release notes together for a future release.
 
