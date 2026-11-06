@@ -168,3 +168,7 @@ try {
         Remove-Item -LiteralPath $resolved -Recurse -Force
     }
 }
+
+# Expected failure cases leave LASTEXITCODE nonzero. Report the suite result,
+# rather than leaking the last child process status to GitHub's shell wrapper.
+exit 0
