@@ -15,8 +15,13 @@ jobs:
         shell: [powershell, pwsh]
     steps:
       - uses: actions/checkout@v6
-      - name: Integration tests (${{ matrix.shell }})
-        shell: ${{ matrix.shell }}
+      - name: Windows PowerShell 5.1 integration tests
+        if: matrix.shell == 'powershell'
+        shell: powershell
+        run: ./tests/Run-Tests.ps1
+      - name: PowerShell 7 integration tests
+        if: matrix.shell == 'pwsh'
+        shell: pwsh
         run: ./tests/Run-Tests.ps1
   release:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
