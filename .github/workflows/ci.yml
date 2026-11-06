@@ -1,0 +1,49 @@
+name: Windows tests and stable release
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Integration tests (${{ matrix.shell }})
+        shell: ${{ matrix.shell }}
+        run: ./tests/Run-Tests.ps1
+  release:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Publish version once, after both Windows test jobs pass
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content VERSION -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid stable version' }
+          $tag = "v$version"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) { Write-Host "$tag already published"; exit 0 }
+          New-Item -ItemType Directory -Path package | Out-Null
+          Copy-Item script/WinFix-DiskSpaceAnalyzer.ps1,LICENSE,README.md,CHANGELOG.md -Destination package
+          Compress-Archive -Path package/* -DestinationPath "WinFix-DiskSpaceAnalyzer-$tag.zip"
+          $assets = @('script/WinFix-DiskSpaceAnalyzer.ps1', "WinFix-DiskSpaceAnalyzer-$tag.zip")
+          $hashes = foreach ($asset in $assets) { '{0}  {1}' -f (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant(), (Split-Path $asset -Leaf) }
+          [IO.File]::WriteAllLines((Join-Path $PWD 'SHA256SUMS.txt'), $hashes, [Text.Encoding]::ASCII)
+          gh release create $tag @assets SHA256SUMS.txt --target $env:COMMIT_SHA --title "WinFix Disk Space Analyzer $tag" --notes-file docs/RELEASE-NOTES.md --latest
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed' }

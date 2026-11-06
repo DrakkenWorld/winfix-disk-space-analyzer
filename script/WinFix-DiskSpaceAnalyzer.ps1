@@ -1,3 +1,5 @@
+#requires -Version 5.1
+# WinFix Kit Disk Space Analyzer 1.0.0
 [CmdletBinding()]
 param(
     [Parameter()]
@@ -49,6 +51,7 @@ function Get-DirectoryUsage {
 
     while ($stack.Count -gt 0) {
         $current = $stack.Pop()
+        if ($current.TrimEnd('\') -eq $resolvedOutput.TrimEnd('\')) { continue }
         try {
             $items = Get-ChildItem -LiteralPath $current -Force -ErrorAction Stop
         } catch {
@@ -80,12 +83,20 @@ function Get-DirectoryUsage {
     return $total
 }
 
-$resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+$scanItem = Get-Item -LiteralPath $Path -Force
+if ($scanItem.PSProvider.Name -ne 'FileSystem' -or ($scanItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+    throw 'The scan root must be a filesystem directory, not a reparse point.'
+}
+$resolvedPath = $scanItem.FullName
+if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { throw 'OutputDirectory cannot be empty.' }
 if (-not (Test-Path -LiteralPath $OutputDirectory -PathType Container)) {
     New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 }
 $resolvedOutput = (Resolve-Path -LiteralPath $OutputDirectory).Path
-$stamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+if ($resolvedOutput.TrimEnd('\') -eq $resolvedPath.TrimEnd('\')) {
+    throw 'OutputDirectory must differ from the scan root. Use a dedicated report subfolder or an external folder.'
+}
+$stamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss-fff") + '_' + [guid]::NewGuid().ToString('N').Substring(0,8)
 $htmlPath = Join-Path $resolvedOutput "DiskSpaceReport_$stamp.html"
 $filesCsvPath = Join-Path $resolvedOutput "LargestFiles_$stamp.csv"
 $foldersCsvPath = Join-Path $resolvedOutput "TopLevelFolders_$stamp.csv"
@@ -110,6 +121,7 @@ try {
 foreach ($child in $children) {
     try {
         if ($child.Attributes -band [IO.FileAttributes]::ReparsePoint) { continue }
+        if ($child.FullName.TrimEnd('\') -eq $resolvedOutput.TrimEnd('\')) { continue }
         if ($child.PSIsContainer) {
             Write-Progress -Activity "Scanning disk usage" -Status $child.FullName
             $beforeCount = $files.Count
@@ -142,18 +154,29 @@ $largestFolders = @($folderRows | Sort-Object LengthBytes -Descending | Select-O
 [long]$totalBytes = 0
 foreach ($file in $files) { $totalBytes += [long]$file.LengthBytes }
 
-if ($largestFiles.Count -gt 0) {
-    $largestFiles | Select-Object Name, FullName, LengthBytes, Size, LastWriteTime |
-        Export-Csv -LiteralPath $filesCsvPath -NoTypeInformation -Encoding UTF8
-} else {
-    '"Name","FullName","LengthBytes","Size","LastWriteTime"' | Set-Content -LiteralPath $filesCsvPath -Encoding UTF8
+function Export-ReportCsv {
+    param([object[]]$Rows, [string[]]$Columns, [string]$Destination)
+    $safeRows = foreach ($row in $Rows) {
+        $record = [ordered]@{}
+        foreach ($column in $Columns) {
+            $value = $row.$column
+            if ($value -is [datetime]) { $value = $value.ToString('o') }
+            # Prevent text fields being interpreted as spreadsheet formulas.
+            if ($value -is [string] -and $value -match '^[\s]*[=+@-]|^[\t\r\n]') { $value = "'" + $value }
+            $record[$column] = $value
+        }
+        [pscustomobject]$record
+    }
+    if (@($safeRows).Count -gt 0) {
+        [string[]]$lines = @($safeRows | ConvertTo-Csv -NoTypeInformation)
+    } else {
+        [string[]]$lines = @(('"' + ($Columns -join '","') + '"'))
+    }
+    # Explicit BOM keeps accents readable in Excel on both PowerShell editions.
+    [IO.File]::WriteAllLines($Destination, $lines, (New-Object System.Text.UTF8Encoding $true))
 }
-if ($largestFolders.Count -gt 0) {
-    $largestFolders | Select-Object Folder, LengthBytes, Size, FilesFound |
-        Export-Csv -LiteralPath $foldersCsvPath -NoTypeInformation -Encoding UTF8
-} else {
-    '"Folder","LengthBytes","Size","FilesFound"' | Set-Content -LiteralPath $foldersCsvPath -Encoding UTF8
-}
+Export-ReportCsv -Rows $largestFiles -Columns Name,FullName,LengthBytes,Size,LastWriteTime -Destination $filesCsvPath
+Export-ReportCsv -Rows $largestFolders -Columns Folder,LengthBytes,Size,FilesFound -Destination $foldersCsvPath
 
 $fileRowsHtml = foreach ($file in $largestFiles) {
     "<tr><td>$( [System.Net.WebUtility]::HtmlEncode([string]$file.Name) )</td><td class='path'>$( [System.Net.WebUtility]::HtmlEncode([string]$file.FullName) )</td><td>$( [System.Net.WebUtility]::HtmlEncode([string]$file.Size) )</td><td>$( [System.Net.WebUtility]::HtmlEncode([string]$file.LastWriteTime) )</td></tr>"

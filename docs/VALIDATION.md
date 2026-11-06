@@ -1,0 +1,18 @@
+# Validation evidence
+
+## Executed locally on 2026-11-06
+
+Windows 10 build 19045. Nine cases passed, exit code 0, independently under:
+
+- Windows PowerShell 5.1.19041.7802.
+- PowerShell 7.6.9.
+
+Cases: parser and both AllowEmptyCollection guards; missing path and invalid limit; empty folder/header-only CSV; nested totals/order/limits/hidden files/source hashes; Unicode/commas/formula protection/HTML escaping/UTF-8 BOM/ISO dates; nested report exclusion and repeated runs; junction loop and junction root; actual fixture ACL denial with exit 2 and one accessible 12-byte file; 5,000 files in 50 folders, exact sum 2,750,000 bytes and zero scan errors.
+
+No timing threshold is asserted. GitHub-hosted test results must be read from Actions; this document does not claim an unobserved CI run passed. Clean Windows 11 manual testing remains unperformed.
+
+## Historical manual evidence supplied by the user
+
+2026-10-12: missing path rejected; denied-access scan continued with 1 accessible file / 12 bytes / 1 error; scale scan found 5,000 files / 2,750,000 bytes / 0 errors in 1.69 seconds (HTML rounded to 1.6 seconds).
+
+The original historical CSV files were not supplied here. Their contents have not been inspected. Current automated tests inspect newly generated CSV files instead.

@@ -1,70 +1,67 @@
-# WinFix Kit — Disk Space Analyzer
+# WinFix Kit — Disk Space Analyzer 1.0.0
 
-A read-only PowerShell utility that scans a chosen directory, reports the largest files and folders, and exports local HTML and CSV reports.
+[![Windows tests](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/actions/workflows/ci.yml)
 
-> **Safety:** This script does not delete, move, or modify scanned files. Reports may contain private file paths and names; review them before sharing.
+Read-only PowerShell disk usage analysis. Find the largest files and direct subfolders, and generate local HTML and CSV reports. No telemetry, upload, cleanup or deletion of scanned files.
 
-## Requirements
+## Download and run
 
-- Windows 10 or Windows 11.
-- Windows PowerShell 5.1 or PowerShell 7.
-- Read access to the folders you want to scan. Administrator rights are not required for ordinary user folders.
-
-## Quick start
-
-Download `script/WinFix-DiskSpaceAnalyzer.ps1` from this repository, open PowerShell, then run:
+Download the script or ZIP from [Releases](https://github.com/DrakkenWorld/winfix-disk-space-analyzer/releases/latest). Requires Windows PowerShell 5.1 or PowerShell 7 on Windows. Administrator rights are unnecessary for ordinary user folders. Inspect the source before running and follow your organization's execution policy. If Windows blocks a trusted downloaded script, use `Unblock-File` on that file after reviewing it.
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\WinFix-DiskSpaceAnalyzer.ps1 -Path "$env:USERPROFILE" -OutputDirectory "$env:USERPROFILE\Desktop\WinFixReport"
+powershell.exe -NoProfile -File .\WinFix-DiskSpaceAnalyzer.ps1 -Path "$env:USERPROFILE\Documents" -OutputDirectory "$env:USERPROFILE\Desktop\WinFixReport"
+# Or use pwsh.exe for PowerShell 7.
 ```
 
-The execution policy change applies only to the current PowerShell process. You can also invoke the script without changing policy according to your organization's policy.
+Reports are written into the output directory. Choose a dedicated subfolder or a location outside the scan root; using the scan root itself as output is rejected. An output subfolder is excluded from the scan, including its old reports. Reports from other locations are ordinary input files.
 
-To scan another folder:
+| Parameter | Default | Values |
+| --- | --- | --- |
+| `Path` | User profile | Existing accessible filesystem directory |
+| `OutputDirectory` | `WinFixReport` under current directory | Writable directory distinct from scan root |
+| `TopFiles` | 25 | 1–500 |
+| `TopFolders` | 20 | 1–200 |
+
+Use a separate PowerShell process for automation: the script exits with **0** on a complete scan, **1** on a fatal error, or **2** when reports were generated with scan errors. A fatal export error can leave partial output; it never reports a successful scan.
+
+## Reports and export contract
+
+Each run has a timestamp and unique suffix, avoiding overwrite of earlier reports.
+
+- `DiskSpaceReport_*.html`: full count, logical size, elapsed scan time, largest items and first 100 scan errors. Untrusted filenames, paths and error messages are HTML-escaped.
+- `LargestFiles_*.csv`: `Name,FullName,LengthBytes,Size,LastWriteTime`.
+- `TopLevelFolders_*.csv`: `Folder,LengthBytes,Size,FilesFound`.
+
+CSV uses comma delimiters, quoted fields and UTF-8 with BOM in both PowerShell editions. Empty results still include headers. Timestamps use ISO 8601. Text cells beginning with a spreadsheet formula marker (`=`, `+`, `-`, `@`, including after whitespace) or a tab/newline are prefixed with an apostrophe; this is intentional export protection. HTML retains the actual name. Import CSV as text when processing untrusted data in spreadsheets.
+
+Rows sort by numeric `LengthBytes` descending; ties have no defined order. Limits affect exported rows, not summary totals. Direct-root files count toward the total but not a subfolder row. Each direct subfolder includes all accessible descendants. `Size` is a localized human-readable value; KB/MB/GB/TB denote binary powers of 1024. Use `LengthBytes` for calculations.
+
+## Scope and limitations
+
+- Measures logical file lengths, not allocated space, free space or space safe to reclaim. Hard-linked files are counted per directory entry.
+- Skips reparse points, including junctions and symbolic links. A reparse-point scan root is rejected. Cloud placeholders carrying that attribute may be skipped.
+- Denied access and files changing during the scan can produce incomplete totals. The root must be listable; otherwise the run fails.
+- Keeps file metadata in memory and sorts it: memory grows with file count. This is not a constant-memory whole-drive scanner.
+- Writes reports only; it does not modify source content or permissions. Windows may update access metadata when reading. The scan is not a filesystem snapshot.
+- Reports contain private names and paths. Review them before sharing.
+
+## Tests and release
+
+No third-party test module is required:
 
 ```powershell
-.\WinFix-DiskSpaceAnalyzer.ps1 -Path "D:\Data" -OutputDirectory "C:\Temp\WinFixReport"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-Tests.ps1
+pwsh.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Run-Tests.ps1
 ```
 
-Optional result limits:
+The nine integration scenarios create a unique temporary fixture, start the analyzer as a child process, inspect reports and verify source hashes. The denied-access test changes only its own fixture ACL and restores it; the junction test removes its own junction before cleanup. No administrator privileges are required.
 
-```powershell
-.\WinFix-DiskSpaceAnalyzer.ps1 -Path "C:\Users" -TopFiles 50 -TopFolders 30
-```
-
-## Output
-
-The output directory receives:
-- `DiskSpaceReport_YYYY-MM-DD_HH-mm-ss.html` — readable summary and largest files.
-- `LargestFiles_YYYY-MM-DD_HH-mm-ss.csv` — file path and size in bytes.
-- `TopLevelFolders_YYYY-MM-DD_HH-mm-ss.csv` — estimated sizes for direct subfolders.
-
-The script skips inaccessible paths and records scan errors in the HTML report. Folder sizes are calculated by walking each direct child folder recursively, so scanning large drives can take a while.
-
-## Limitations
-
-- Reparse points (including junctions and symbolic links) are skipped to reduce the risk of loops.
-- Files that cannot be read are skipped and counted as errors.
-- Folder totals can be incomplete if access is denied.
-- The tool reports storage usage; it does not determine whether files are safe to delete.
-- No telemetry or network upload is performed.
-
-## Verify the script
-
-Review the PowerShell source before running it. After downloading, you can calculate its SHA-256 hash:
+See [validation evidence](docs/VALIDATION.md). GitHub Actions runs both PowerShell editions on `windows-latest`. After both jobs pass on `main`, it publishes the version in `VERSION` if that release does not already exist, with script, ZIP and `SHA256SUMS.txt`. Published versions are not overwritten. Bump `VERSION`, script version, changelog and release notes together for a future release.
 
 ```powershell
 Get-FileHash .\WinFix-DiskSpaceAnalyzer.ps1 -Algorithm SHA256
 ```
 
-## Roadmap
+Compare with the checksum attached to the same release. This detects corruption; it is not a code signature. The script is unsigned.
 
-- [ ] Add Pester tests.
-- [ ] Test on clean Windows 10 and Windows 11 environments.
-- [ ] Publish a versioned GitHub Release and SHA-256 checksum.
-- [ ] Add representative screenshots from a test run.
-
-## License
-
-MIT. See `LICENSE`.
+[WinFix Kit website](https://drakkenworld.github.io/winfix-kit-site/) · [Security](SECURITY.md) · [MIT license](LICENSE)
